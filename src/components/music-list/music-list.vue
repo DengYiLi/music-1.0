@@ -4,10 +4,13 @@
       <i class="icon-back"></i>
     </div>
     <h1 class="title" v-html="title"></h1>
-    <div class="bg-image" :style="bgStyle">
+    <div class="bg-image" :style="bgStyle" ref="bgImage">
       <div class="filter"></div>
     </div>
-    <scroll>
+    <scroll :data="songs" class="list" ref="list">
+      <div class="song-list-wrapper">
+        <song-list :songs="songs"></song-list>
+      </div>
     </scroll>
   </div>
 </template>
@@ -29,6 +32,9 @@
         type: String,
         default: ''
       }
+    },
+    mounted() {
+      this.$refs.list.$el.style.top = `${this.$refs.bgImage.clientHeight}px`
     },
     computed: {
       bgStyle() {
