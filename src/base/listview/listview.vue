@@ -95,7 +95,7 @@
       },
       scroll(pos) {
         this.scrollY = pos.y
-        // console.log(pos)
+        // console.log(pos.y)
       },
       _scrollTo(index) {
         // 边界问题
