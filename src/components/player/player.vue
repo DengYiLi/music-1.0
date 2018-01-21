@@ -22,7 +22,7 @@
       <div class="middle">
         <div class="middle-l">
           <div class="cd-wrapper" ref="cdWrapper">
-            <div class="cd">
+            <div class="cd" :class="cdCls">
               <img class="image" :src="currentSong.image">
             </div>
           </div>
@@ -33,14 +33,14 @@
           <div class="icon i-left">
             <i class="icon-sequence"></i>
           </div>
-          <div class="icon i-left">
-            <i class="icon-prev"></i>
+          <div class="icon i-left" :class="disableCls">
+            <i @click="prev" class="icon-prev"></i>
           </div>
-          <div class="icon i-left">
-            <i class="icon-play"></i>
+          <div class="icon i-left" :class="disableCls">
+            <i @click="togglePlaying" :class="playIcon"></i>
           </div>
-          <div class="icon i-left">
-            <i class="icon-next"></i>
+          <div class="icon i-left" :class="disableCls">
+            <i @click="next" class="icon-next"></i>
           </div>
           <div class="icon i-left">
             <i class="icon icon-not-favorite"></i>
@@ -53,7 +53,7 @@
     <transition name="mini">
       <div class="mini-player" v-show="!fullScreen" @click="open">
       <div class="icon">
-        <img width="40" height="40" :src="currentSong.image">
+        <img :class="cdCls" width="40" height="40" :src="currentSong.image">
       </div>
       <div class="text">
         <h2 class="name" v-html="currentSong.name"></h2>
@@ -62,10 +62,11 @@
       <div class="control">
       </div>
       <div class="control">
-        <i class="icon-playlist"></i>
+        <i @click.stop="togglePlaying" :class="miniIcon"></i>
       </div>
     </div>
     </transition>
+    <audio ref="audio" :src="currentSong.url" @canplay="ready" @error="error"></audio>
   </div>
 </template>
 
@@ -77,11 +78,30 @@
   const transform = prefixStyle('transform')
 
   export default{
+    data() {
+      return {
+        songReady: false
+      }
+    },
     computed: {
+      cdCls() {
+        return this.playing ? 'play' : 'play pause'
+      },
+      playIcon() {
+        return this.playing ? 'icon-pause' : 'icon-play'
+      },
+      miniIcon() {
+        return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
+      },
+      disableCls() {
+        return this.songReady ? '' : 'disable'
+      },
       ...mapGetters([
         'fullScreen',
         'playlist',
-        'currentSong'
+        'currentSong',
+        'playing',
+        'currentIndex'
       ])
     },
     methods: {
@@ -134,6 +154,46 @@
         this.$refs.cdWrapper.style[ transform ] = ''
         console.log('清空了！')
       },
+      togglePlaying() {
+        if (!this.songReady) {
+          return
+        }
+        this.setPlayingState(!this.playing)
+      },
+      next() {
+        if (!this.songReady) {
+          return
+        }
+        let index = this.currentIndex + 1
+        if (index === this.playlist.length) {
+          index = 0
+        }
+        this.setCurrentIndex(index)
+        if (!this.playing) {
+          this.togglePlaying()
+        }
+        this.songReady = false
+      },
+      prev() {
+        if (!this.songReady) {
+          return
+        }
+        let index = this.currentIndex - 1
+        if (index === -1) {
+          index = this.playlist.length - 1
+        }
+        this.setCurrentIndex(index)
+        if (!this.playing) {
+          this.togglePlaying()
+        }
+        this.songReady = false // 标志位
+      },
+      ready() {
+        this.songReady = true
+      },
+      error() { // 比如网络错误
+        this.songReady = true
+      },
       _getPosAndScale() {
         const targetWidth = 40
         const paddingLeft = 40
@@ -151,8 +211,23 @@
         }
       },
       ...mapMutations({
-        setFullScreen: 'SET_FULL_SCREEN'
+        setFullScreen: 'SET_FULL_SCREEN',
+        setPlayingState: 'SET_PLAYING_STATE',
+        setCurrentIndex: 'SET_CURRENT_INDEX'
       })
+    },
+    watch: {
+      currentSong() {
+        this.$nextTick(() => {
+          this.$refs.audio.play()
+        })
+      },
+      playing(newPlaying) {
+        const audio = this.$refs.audio
+        this.$nextTick(() => {
+          newPlaying ? audio.play() : audio.pause()
+        })
+      }
     }
   }
 </script>
@@ -360,9 +435,9 @@
         img
           border-radius: 50%
           &.play
-            animation: rotate 10s linear infinite
+            animation: rotate 10s linear infinite // animation 属性是一个简写属性，用于设置六个动画属性
           &.pause
-            animation-play-state: paused
+            animation-play-state: paused // animation-play-state 属性规定动画正在运行还是暂停
       .text
         display: flex
         flex-direction: column
@@ -392,7 +467,7 @@
           left: 0
           top: 0
 
-  @keyframes rotate
+  @keyframes rotate // 通过 @keyframes 规则，能够创建动画
     0%
       transform: rotate(0)
     100%
