@@ -27,7 +27,7 @@
       }
     },
     created() {
-      this.touch = {}
+      this.touch = {} // 将共享数据挂载到此对象上
     },
     methods: {
       progressTouchStart(e) {
@@ -65,7 +65,7 @@
     },
     watch: {
       percent(newPercent) {
-        if (newPercent >= 0 && !this.touch.initiated) {
+        if (newPercent >= 0 && !this.touch.initiated) { // 没有拖动的时候
           const barWidth = this.$refs.progressBar.clientWidth - progressBtnWidth
           const offsetWidth = newPercent * barWidth
           this._offset(offsetWidth)
